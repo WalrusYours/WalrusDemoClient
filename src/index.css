@@ -1,0 +1,185 @@
+@import url('https://fonts.googleapis.com/css2?family=Onest:wght@100..900&display=swap');
+@import "tailwindcss";
+
+/* Design tokens ported from nons-library (src/app/globals.css): same Onest font, same
+   semantic variables (--bg, --text, --container, --border...), same primary. Components use
+   them as bg-[var(--container)], text-[var(--text-muted)], bg-primary, and so on. */
+@theme {
+  --color-primary: #f4586a;
+  --color-primaryfocus: #ff7282;
+  --color-primarydeep: #d94355;
+  --color-lightred: #ff8a80;
+
+  --color-darkbg: #18191a;
+  --color-whitetext: #e4e6eb;
+  --color-containerbg: #242526;
+  --color-container2bg: #3a3b3c;
+}
+
+*, *::before, *::after {
+  font-family: 'Onest', system-ui, sans-serif;
+}
+
+html {
+  background-color: var(--color-darkbg);
+  color-scheme: dark;
+  scrollbar-gutter: stable;
+  overflow-x: clip;
+}
+
+html {
+  --bg: var(--color-darkbg);
+  --text: var(--color-whitetext);
+  --text-muted: #b0b3b8;
+  --container: var(--color-containerbg);
+  --container-2: var(--color-container2bg);
+  --border: rgba(255, 255, 255, 0.1);
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-strong: rgba(255, 255, 255, 0.2);
+  --surface: #3a3b3c;
+  --surface-hover: rgba(255, 255, 255, 0.08);
+  --surface-active: rgba(255, 255, 255, 0.12);
+  --input: #3a3b3c;
+  --overlay: rgba(6, 6, 10, 0.7);
+  --divider: rgba(255, 255, 255, 0.06);
+  --placeholder: rgba(255, 255, 255, 0.25);
+  --primary-soft: rgba(244, 88, 106, 0.14);
+  --primary-ring: rgba(244, 88, 106, 0.45);
+  --nav-bg: var(--container);
+}
+
+/* WALRUS accent: the coral of the logo. Used only by the tuning panel. */
+@theme {
+  --color-walrus: #f4586a;
+  --color-walrus-hover: #ff7282;
+  --color-walrus-soft: #0f0f0f;
+  --color-walrus-ink: #050505;
+  --color-wt-panel: #050505;
+  --color-wt-raised: #0b0b0b;
+  --color-wt-line: #1a1a1a;
+  --color-wt-line-strong: #2a2a2a;
+  --color-wt-muted: #8a8a8a;
+  --color-wt-faint: #555555;
+  --color-wt-ok: #5fc48a;
+  --color-wt-bad: #ff8a80;
+  --animate-wt-pop: wt-pop 140ms ease-out;
+  --animate-wt-sheet: wt-sheet 200ms ease-out;
+  --animate-wt-pulse: wt-pulse 1.2s ease-in-out infinite;
+}
+
+body {
+  margin: 0;
+  /* clip, not hidden: hidden would make body a scroll container and break the sticky header */
+  overflow-x: clip;
+  background-color: var(--bg);
+  color: var(--text);
+}
+
+/* ---- WalrusTune slider ---------------------------------------------------------------
+   --wt-fill is set inline per slider (0%..100%) so the filled part of the track is coral. */
+.wt-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 1.5rem;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+  --wt-track: #222222;
+}
+
+.wt-range::-webkit-slider-runnable-track {
+  height: 2px;
+  border-radius: 9999px;
+  background: linear-gradient(
+    to right,
+    #ededed var(--wt-fill, 50%),
+    var(--wt-track) var(--wt-fill, 50%)
+  );
+}
+.wt-range::-moz-range-track {
+  height: 2px;
+  border-radius: 9999px;
+  background: var(--wt-track);
+}
+.wt-range::-moz-range-progress {
+  height: 2px;
+  border-radius: 9999px;
+  background: #ededed;
+}
+
+.wt-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  margin-top: -5px;
+  border-radius: 9999px;
+  border: 0;
+  background: #ededed;
+  box-shadow: none;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+.wt-range::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 9999px;
+  border: 0;
+  background: #ededed;
+  box-shadow: none;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+.wt-range:hover::-webkit-slider-thumb,
+.wt-range:active::-webkit-slider-thumb {
+  transform: scale(1.25);
+}
+.wt-range:hover::-moz-range-thumb,
+.wt-range:active::-moz-range-thumb {
+  transform: scale(1.25);
+}
+
+.wt-range:focus-visible {
+  outline: none;
+}
+.wt-range:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 4px rgb(255 255 255 / 0.14);
+}
+.wt-range:focus-visible::-moz-range-thumb {
+  box-shadow: 0 0 0 4px rgb(255 255 255 / 0.14);
+}
+
+@keyframes wt-pop {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes wt-sheet {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes wt-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wt-range::-webkit-slider-thumb,
+  .wt-range::-moz-range-thumb {
+    transition: none;
+  }
+}

@@ -9,6 +9,7 @@ import { MusicPage } from './pages/MusicPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { PlaylistPage } from './pages/PlaylistPage'
 import { PostPage } from './pages/PostPage'
+import { VideoPage } from './pages/VideoPage'
 
 // Everything that needs a user sits behind the sign-in. The key remounts the session and
 // posts state when the user changes, so nobody sees the previous user's feed.
@@ -25,6 +26,8 @@ function SignedIn() {
               <Route path="post/:postId" element={<PostPage />} />
               <Route path="music" element={<MusicPage />} />
               <Route path="music/:playlistId" element={<PlaylistPage />} />
+              <Route path="video" element={<VideoPage />} />
+              <Route path="video/:videoId" element={<VideoPage />} />
               <Route path="*" element={<NotFoundPage />} />
             </Route>
           </Routes>

@@ -145,11 +145,23 @@ export function UsersIcon({ className }: IconProps) {
   )
 }
 
-export function PlayIcon({ className }: IconProps) {
+export function PlayIcon({ className, filled }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" {...stroke} className={className}>
-      <rect x="3" y="4" width="18" height="16" rx="3" />
-      <path d="m10 9 5 3-5 3V9Z" />
+      <rect x="3" y="4" width="18" height="16" rx="3" fill={filled ? 'currentColor' : 'none'} />
+      <path
+        d="m10 9 5 3-5 3V9Z"
+        fill={filled ? 'var(--nav-bg)' : 'none'}
+        stroke={filled ? 'var(--nav-bg)' : 'currentColor'}
+      />
+    </svg>
+  )
+}
+
+export function StarIcon({ className, filled }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" {...stroke} fill={filled ? 'currentColor' : 'none'} className={className}>
+      <path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3 6.4 20.2l1.1-6.2L3 9.6l6.2-.9L12 3Z" />
     </svg>
   )
 }

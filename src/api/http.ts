@@ -98,4 +98,13 @@ export const httpApi: HostApi = {
     request(userId, `/users/${encodeURIComponent(userId)}/feedback/${encodeURIComponent(feedbackId)}`, {
       method: 'DELETE',
     }),
+  listVideos: (userId, opts) =>
+    request(userId, `/videos${knobQuery(opts?.knobs)}`, { signal: opts?.signal }),
+  getVideo: (userId, id, opts) =>
+    request(userId, `/videos/${encodeURIComponent(id)}${knobQuery(opts?.knobs)}`, { signal: opts?.signal }),
+  rateVideo: (userId, id, rating) =>
+    request(userId, `/videos/${encodeURIComponent(id)}/rating`, {
+      method: 'PUT',
+      body: JSON.stringify({ rating }),
+    }),
 }

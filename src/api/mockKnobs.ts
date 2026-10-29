@@ -102,15 +102,25 @@ knobs.push(
     'Match the playlist as a whole, or any one song in it (good for mixed playlists).'), scope: ['playlist_add'] },
   { ...knob('Playlist suggestions', 'mix_in_my_taste', 'Also use my own taste', 'Off', 'On', 1,
     'Lean on songs you like, most when the playlist is short.'), kind: 'toggle', scope: ['playlist_add'] },
+
+  // The movies.yml recommender: streaming video controls.
+  { ...knob('Taste', 'video_taste_vs_crowd', 'My taste vs what everyone watches', 'My taste', 'What everyone watches', 0.5,
+    'Balance films similar to your highly rated titles against what is popular across the platform.'), scope: ['video'] },
+  { ...knob('Taste', 'use_ratings', 'Count my star ratings', 'Off', 'On', 1,
+    'Use your 1–5 star ratings (centred at 3 stars) to shape recommendations.'), kind: 'toggle', scope: ['video'] },
+  { ...knob('Editorial', 'show_originals', 'Show our originals first', 'Off', 'On', 1,
+    'Boost platform originals in your recommendations.'), kind: 'toggle', scope: ['video'] },
+  { ...knob('Editorial', 'originals_amount', 'How many originals', 'Subtle', 'Up front', 0.5,
+    'How strongly originals and new releases are promoted when Originals are enabled.'), dependsOn: 'show_originals', scope: ['video'] },
 )
 for (const k of knobs) k.scope ??= ['home']
 
-const base: KnobValues = Object.fromEntries(knobs.filter((k) => k.scope?.includes('home')).map((k) => [k.id, k.default]))
-const preset = (id: string, label: string, changes: KnobValues) => ({
+const base: KnobValues = Object.fromEntries(knobs.map((k) => [k.id, k.default]))
+const preset = (id: string, label: string, changes: KnobValues, scope: string[] = ['home']) => ({
   id,
   label,
   knobs: { ...base, ...changes },
-  scope: ['home'],
+  scope,
 })
 
 export const knobConfig: KnobConfig = {
@@ -128,5 +138,8 @@ export const knobConfig: KnobConfig = {
       match_topic: 0.2, match_mood: 0.5,
     }),
     preset('latest', 'Latest', { taste_vs_crowd: 0.3, horizon: 0, explore: 0.1, freshness: 1, shelf_life: 0.1 }),
+    preset('video_default', 'Balanced', { video_taste_vs_crowd: 0.5, show_originals: 1, originals_amount: 0.5, use_ratings: 1 }, ['video']),
+    preset('video_my_taste', 'My taste', { video_taste_vs_crowd: 0, use_ratings: 1, show_originals: 0 }, ['video']),
+    preset('video_popular', 'Popular now', { video_taste_vs_crowd: 1, show_originals: 0, originals_amount: 0 }, ['video']),
   ],
 }

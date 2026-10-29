@@ -1,4 +1,4 @@
-import type { Playlist, Post, Suggestion, Track } from '../types'
+import type { Playlist, Post, Suggestion, Track, Video, VideoSuggestion } from '../types'
 
 // What the app server exposes to this client. These shapes mirror the WALRUS responses
 // described in .claude/ADAPT.md (steps 6 to 8), but the client never talks to WALRUS:
@@ -157,4 +157,28 @@ export interface HostApi {
     playlistId: string,
     opts?: { knobs?: KnobValues; signal?: AbortSignal },
   ): Promise<{ suggestions: Suggestion[]; candidates: number; tookMs: number; fromTitle: boolean }>
+
+  // Video
+  listVideos(
+    userId: string,
+    opts?: { knobs?: KnobValues; signal?: AbortSignal },
+  ): Promise<{
+    featured: Video
+    recommended: VideoSuggestion[]
+    catalogue: Video[]
+    candidates: number
+    tookMs: number
+  }>
+  getVideo(
+    userId: string,
+    videoId: string,
+    opts?: { knobs?: KnobValues; signal?: AbortSignal },
+  ): Promise<{
+    video: Video
+    similar: VideoSuggestion[]
+    fromDirector: Video[]
+    candidates: number
+    tookMs: number
+  }>
+  rateVideo(userId: string, videoId: string, rating: number | null): Promise<Video>
 }

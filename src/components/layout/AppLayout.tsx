@@ -7,10 +7,9 @@ import { HomeIcon, MusicIcon, PlayIcon, SearchIcon, StoreIcon, UsersIcon } from 
 import { Logo } from '../ui/Logo'
 import { UserMenu } from './UserMenu'
 
-// Only Home goes anywhere. The other tabs are there so the bar looks like the real thing.
+// Home, Music and Video are live tabs. The other tabs are there so the bar looks like the real thing.
 const decorativeTabs = [
   { label: 'Friends', Icon: UsersIcon },
-  { label: 'Watch', Icon: PlayIcon },
   { label: 'Marketplace', Icon: StoreIcon },
 ]
 
@@ -68,6 +67,20 @@ export function AppLayout() {
               }
             >
               {({ isActive }) => <MusicIcon filled={isActive} className="h-6 w-6" />}
+            </NavLink>
+            <NavLink
+              to="/video"
+              aria-label="Video"
+              title="Video"
+              className={({ isActive }) =>
+                `relative grid w-24 place-items-center border-b-[3px] lg:w-28 ${
+                  isActive
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-[var(--text-muted)] hover:bg-[var(--surface-hover)]'
+                } my-0.5 rounded-lg rounded-b-none`
+              }
+            >
+              {({ isActive }) => <PlayIcon filled={isActive} className="h-6 w-6" />}
             </NavLink>
             {decorativeTabs.map(({ label, Icon }) => (
               <span

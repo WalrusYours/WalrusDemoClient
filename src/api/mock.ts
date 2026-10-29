@@ -4,6 +4,7 @@ import { applyFeedback, feedbackReasons, listFeedback, recordFeedback, undoFeedb
 import { knobConfig } from './mockKnobs'
 import * as music from './mockMusic'
 import { rankBySimilarity, weightsFrom } from './mockRank'
+import * as video from './mockVideo'
 import { USERNAME_RE } from './types'
 import type { HostApi, KnobValues, Profile } from './types'
 
@@ -177,5 +178,29 @@ export const mockApi: HostApi = {
   },
   async undoFeedback(userId, feedbackId) {
     undoFeedback(userId, feedbackId)
+  },
+  async listVideos(userId, opts) {
+    await delay()
+    const started = performance.now()
+    const saved = (profiles.get(userId) ?? defaultProfile()).knobs
+    const r = video.listVideos(userId, { ...saved, ...opts?.knobs })
+    return {
+      ...r,
+      tookMs: Math.round(performance.now() - started),
+    }
+  },
+  async getVideo(userId, videoId, opts) {
+    await delay()
+    const started = performance.now()
+    const saved = (profiles.get(userId) ?? defaultProfile()).knobs
+    const r = video.getVideo(userId, videoId, { ...saved, ...opts?.knobs })
+    return {
+      ...r,
+      tookMs: Math.round(performance.now() - started),
+    }
+  },
+  async rateVideo(userId, videoId, rating) {
+    await delay(30)
+    return video.rateVideo(userId, videoId, rating)
   },
 }

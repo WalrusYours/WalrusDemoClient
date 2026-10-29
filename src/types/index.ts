@@ -48,3 +48,28 @@ export interface Suggestion {
   score: number
   because: string
 }
+
+export interface Video {
+  id: string
+  title: string
+  director: string
+  year: number
+  genres: string[]
+  runtimeMin: number
+  ageRating: number
+  original: boolean
+  synopsis: string
+  /** popularity, in millions of views */
+  views: number
+  /** average community rating (1..5) */
+  communityRating: number
+  /** the current user's rating from 1 to 5, or null if unrated */
+  userRating: number | null
+}
+
+/** A film WALRUS recommends on the Video tab, with its plain-language reason. */
+export interface VideoSuggestion {
+  video: Video
+  score: number
+  because: string
+}

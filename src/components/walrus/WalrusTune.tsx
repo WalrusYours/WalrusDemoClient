@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import type { KnobDef } from '../../api'
@@ -84,7 +84,7 @@ export interface WalrusTuneProps {
   footerIcon?: IconProp
   closeIcon?: IconProp
   show?: Partial<WalrusTuneShow>
-  /** Kept for compatibility: the panel is a centred modal now, so this has no effect. */
+  /** Which edge of the trigger the popover lines up with on wide screens. */
   align?: 'left' | 'right'
   /** Controlled open state. Leave unset to let the component manage it. */
   open?: boolean
@@ -104,6 +104,9 @@ export interface WalrusTuneProps {
    */
   surface?: string
 }
+
+/** Width of the floating popover on wide screens, in px (38rem). */
+const POPOVER_WIDTH = 608
 
 const DEFAULT_LABELS: WalrusTuneLabels = {
   trigger: 'Tune',
@@ -263,6 +266,7 @@ export function WalrusTune({
   footerIcon,
   closeIcon,
   show: showOverrides,
+  align = 'right',
   open: openProp,
   defaultOpen = false,
   onOpenChange,
@@ -276,7 +280,7 @@ export function WalrusTune({
   const labels = { ...DEFAULT_LABELS, ...labelOverrides }
   const show = { ...DEFAULT_SHOW, ...showOverrides }
 
-  // Which sections the user opened or closed; untouched ones follow the default (first is open).
+  // Which sections the user opened or closed; untouched ones follow the default (all open).
   const [toggled, setToggled] = useState<Record<string, boolean>>({})
   const [openState, setOpenState] = useState(defaultOpen)
   const controlled = openProp !== undefined
@@ -314,6 +318,41 @@ export function WalrusTune({
       trigger?.focus()
     }
   }, [open])
+
+  // Where the popover goes on wide screens: next to the trigger, kept inside the viewport. It
+  // opens below the button, or above it when there is more room there, and its height is
+  // capped to the room it has, so it never runs off the screen (the body scrolls instead).
+  const [pos, setPos] = useState<Record<string, string>>({})
+  useLayoutEffect(() => {
+    if (!open) return
+    const place = () => {
+      const t = triggerRef.current
+      if (!t) return
+      const r = t.getBoundingClientRect()
+      const vw = window.innerWidth
+      const vh = window.innerHeight
+      const gap = 8
+      const width = Math.min(POPOVER_WIDTH, vw - 2 * gap)
+      const left = Math.max(gap, Math.min(align === 'right' ? r.right - width : r.left, vw - width - gap))
+      const below = vh - r.bottom - 2 * gap
+      const above = r.top - 2 * gap
+      const up = below < 320 && above > below
+      setPos({
+        '--wt-left': `${Math.round(left)}px`,
+        '--wt-w': `${Math.round(width)}px`,
+        '--wt-top': up ? 'auto' : `${Math.round(r.bottom + gap)}px`,
+        '--wt-bottom': up ? `${Math.round(vh - r.top + gap)}px` : 'auto',
+        '--wt-maxh': `${Math.max(200, Math.round(up ? above : below))}px`,
+      })
+    }
+    place()
+    window.addEventListener('resize', place)
+    window.addEventListener('scroll', place, true) // true: also scrolls of inner containers
+    return () => {
+      window.removeEventListener('resize', place)
+      window.removeEventListener('scroll', place, true)
+    }
+  }, [open, align])
 
   if (!config) return null
 
@@ -359,25 +398,26 @@ export function WalrusTune({
       {open &&
         createPortal(
         <>
-          {/* A bottom sheet on small screens, a centred modal on wide ones. Both sit on the
-              viewport (not under the trigger), so they always fit and never run off the page. */}
-          <div className="fixed inset-0 z-30 bg-black/60" aria-hidden="true" />
+          {/* A bottom sheet (dimmed) on small screens; on wide ones a popover floating next to
+              the trigger, with no backdrop. Both are fixed to the viewport, so they never run
+              off the page. */}
+          <div className="fixed inset-0 z-30 bg-black/60 sm:hidden" aria-hidden="true" />
 
           <div
             ref={dialogRef}
             role="dialog"
-            aria-modal="true"
             aria-label={labels.title ? `${labels.title}: ${labels.dialog}` : labels.dialog}
-            className={`fixed inset-x-0 bottom-0 z-40 flex max-h-[85svh] animate-wt-sheet flex-col rounded-t-2xl border border-wt-line bg-wt-panel sm:inset-0 sm:m-auto sm:h-fit sm:max-h-[min(46rem,calc(100svh-2rem))] sm:w-[min(52rem,calc(100vw-2rem))] sm:animate-wt-pop sm:rounded-xl ${panelClassName}`}
+            style={pos}
+            className={`fixed right-0 bottom-0 left-0 z-40 flex max-h-[85svh] animate-wt-sheet flex-col rounded-t-2xl border border-wt-line bg-wt-panel shadow-2xl shadow-black/60 sm:right-auto sm:left-[var(--wt-left)] sm:top-[var(--wt-top)] sm:bottom-[var(--wt-bottom)] sm:h-fit sm:max-h-[var(--wt-maxh)] sm:w-[var(--wt-w)] sm:animate-wt-pop sm:rounded-xl ${panelClassName}`}
           >
             {show.header && (
-              <div className="flex shrink-0 items-start gap-3 p-4 pb-2">
+              <div className="flex shrink-0 items-center gap-2.5 px-4 pt-2.5 pb-1">
                 {headerIcon !== false && headerIcon !== null && (
-                  <div className="grid h-8 w-8 shrink-0 place-items-center">
-                    <Icon icon={headerIcon} size={22} />
+                  <div className="grid h-6 w-6 shrink-0 place-items-center">
+                    <Icon icon={headerIcon} size={18} />
                   </div>
                 )}
-                <div className="min-w-0 flex-1">
+                <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2">
                   {labels.title && (
                     <h2 className="text-sm font-medium text-[var(--text)]">{labels.title}</h2>
                   )}
@@ -395,7 +435,7 @@ export function WalrusTune({
               </div>
             )}
 
-            <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto overscroll-contain p-4">
+            <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain px-4 py-3">
               {show.presets && visiblePresets.length > 0 && (
                 <div>
                   {labels.presets && (
@@ -439,8 +479,13 @@ export function WalrusTune({
                         className={`transition-opacity ${inactive ? 'opacity-40' : ''}`}
                         title={inactive ? `No effect while "${parent.label}" is at its lowest` : undefined}
                       >
-                        <div className="mb-1 flex items-center gap-2">
-                          <label htmlFor={`wt-${k.id}`} className="flex-1 text-sm text-[var(--text)]">
+                        <div className="mb-0.5 flex items-center gap-2">
+                          {/* The explanation is a hover tooltip: it keeps each knob to two lines. */}
+                          <label
+                            htmlFor={`wt-${k.id}`}
+                            title={k.help}
+                            className={`flex-1 text-[13px] leading-tight text-[var(--text)] ${k.help ? 'cursor-help' : ''}`}
+                          >
                             {k.label}
                           </label>
                           {show.values && (k.kind ?? 'slider') === 'slider' && (
@@ -476,7 +521,6 @@ export function WalrusTune({
                             </button>
                           )}
                         </div>
-                        {k.help && <p className="mb-1.5 text-xs text-wt-muted">{k.help}</p>}
                         {k.kind === 'choice' && k.options && (
                           <div
                             id={`wt-${k.id}`}
@@ -501,25 +545,32 @@ export function WalrusTune({
                           </div>
                         )}
                         {(k.kind ?? 'slider') === 'slider' && (
-                          <input
-                            id={`wt-${k.id}`}
-                            type="range"
-                            className="wt-range"
-                            min={k.min}
-                            max={k.max}
-                            step={0.01}
-                            value={value}
-                            style={{ ['--wt-fill' as string]: `${pct}%` }}
-                            onChange={(e) => setKnob(k.id, Number(e.target.value))}
-                            onPointerUp={commit}
-                            onKeyUp={commit}
-                            aria-valuetext={`${pct}%, between ${k.low} and ${k.high}`}
-                          />
-                        )}
-                        {show.endLabels && (k.kind ?? 'slider') === 'slider' && (
-                          <div className="flex justify-between gap-4 text-xs text-wt-faint">
-                            <span>{k.low}</span>
-                            <span className="text-right">{k.high}</span>
+                          // The low/high text sits beside the slider, not under it: one row, not two.
+                          <div className="flex items-center gap-2">
+                            {show.endLabels && (
+                              <span className="max-w-[28%] shrink-0 truncate text-[11px] text-wt-faint" title={k.low}>
+                                {k.low}
+                              </span>
+                            )}
+                            <input
+                              id={`wt-${k.id}`}
+                              type="range"
+                              className="wt-range min-w-0 flex-1"
+                              min={k.min}
+                              max={k.max}
+                              step={0.01}
+                              value={value}
+                              style={{ ['--wt-fill' as string]: `${pct}%` }}
+                              onChange={(e) => setKnob(k.id, Number(e.target.value))}
+                              onPointerUp={commit}
+                              onKeyUp={commit}
+                              aria-valuetext={`${pct}%, between ${k.low} and ${k.high}`}
+                            />
+                            {show.endLabels && (
+                              <span className="max-w-[28%] shrink-0 truncate text-right text-[11px] text-wt-faint" title={k.high}>
+                                {k.high}
+                              </span>
+                            )}
                           </div>
                         )}
                       </div>
@@ -529,13 +580,13 @@ export function WalrusTune({
                   // Knobs without a group are listed plainly, with no heading.
                   if (section.name === '') {
                     return (
-                      <div key="ungrouped" className="grid gap-5 sm:col-span-2 sm:grid-cols-2">
+                      <div key="ungrouped" className="grid gap-x-4 gap-y-2 sm:col-span-2 sm:grid-cols-2">
                         {knobRows}
                       </div>
                     )
                   }
 
-                  const isOpen = toggled[section.name] ?? index === 0
+                  const isOpen = toggled[section.name] ?? true
                   const moved = section.knobs.filter((k) => !isDefault(k))
                   const bodyId = `wt-section-${index}`
                   return (
@@ -546,7 +597,7 @@ export function WalrusTune({
                           onClick={() => setToggled((t) => ({ ...t, [section.name]: !isOpen }))}
                           aria-expanded={isOpen}
                           aria-controls={bodyId}
-                          className="flex min-w-0 flex-1 items-center gap-2 px-3 py-2.5 text-left text-sm font-medium text-[var(--text)] focus-visible:outline-2 focus-visible:outline-[var(--text-muted)]"
+                          className="flex min-w-0 flex-1 items-center gap-2 px-3 py-1.5 text-left text-[13px] font-medium text-[var(--text)] focus-visible:outline-2 focus-visible:outline-[var(--text-muted)]"
                         >
                           <Chevron open={isOpen} />
                           <span className="truncate">{section.name}</span>
@@ -567,7 +618,7 @@ export function WalrusTune({
                         )}
                       </div>
                       {isOpen && (
-                        <div id={bodyId} className="flex flex-col gap-5 border-t border-wt-line p-3">
+                        <div id={bodyId} className="flex flex-col gap-2 border-t border-wt-line px-3 py-2">
                           {knobRows}
                         </div>
                       )}
@@ -578,9 +629,9 @@ export function WalrusTune({
             </div>
 
             {showFooter && (
-              <div className="flex shrink-0 flex-col gap-2 border-t border-wt-line p-4 pt-3">
+              <div className="flex shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-wt-line px-4 py-2.5">
                 {(show.status || show.saveState) && (
-                  <div className="flex items-center gap-2 text-xs text-wt-muted" aria-live="polite">
+                  <div className="flex min-w-0 flex-1 items-center gap-2 text-xs text-wt-muted" aria-live="polite">
                     {show.status ? (
                       <>
                         <span
@@ -597,7 +648,7 @@ export function WalrusTune({
                 )}
 
                 {(show.resetAll || show.poweredBy) && (
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
                     {show.resetAll ? (
                       <button
                         type="button"

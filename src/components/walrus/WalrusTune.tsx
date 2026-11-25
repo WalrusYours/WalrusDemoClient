@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import type { KnobDef } from '../../api'
 import { usePosts } from '../../context/PostsContext'
 import { useSession } from '../../context/SessionContext'
@@ -83,7 +84,7 @@ export interface WalrusTuneProps {
   footerIcon?: IconProp
   closeIcon?: IconProp
   show?: Partial<WalrusTuneShow>
-  /** Which edge of the trigger the panel aligns to on wide screens. */
+  /** Kept for compatibility: the panel is a centred modal now, so this has no effect. */
   align?: 'left' | 'right'
   /** Controlled open state. Leave unset to let the component manage it. */
   open?: boolean
@@ -262,7 +263,6 @@ export function WalrusTune({
   footerIcon,
   closeIcon,
   show: showOverrides,
-  align = 'right',
   open: openProp,
   defaultOpen = false,
   onOpenChange,
@@ -291,6 +291,7 @@ export function WalrusTune({
   })
 
   const rootRef = useRef<HTMLDivElement>(null)
+  const dialogRef = useRef<HTMLDivElement>(null)
   const closeRef = useRef<HTMLButtonElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
 
@@ -300,8 +301,10 @@ export function WalrusTune({
     const trigger = triggerRef.current
     closeRef.current?.focus()
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpenRef.current(false)
+    // The dialog is portaled to <body>, so it is not inside rootRef: check both.
     const onDown = (e: MouseEvent) => {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpenRef.current(false)
+      const t = e.target as Node
+      if (!rootRef.current?.contains(t) && !dialogRef.current?.contains(t)) setOpenRef.current(false)
     }
     document.addEventListener('keydown', onKey)
     document.addEventListener('mousedown', onDown)
@@ -353,20 +356,22 @@ export function WalrusTune({
         )}
       </button>
 
-      {open && (
+      {open &&
+        createPortal(
         <>
-          {/* Backdrop only matters on small screens, where the panel is a bottom sheet. */}
-          <div className="fixed inset-0 z-30 bg-black/60 sm:hidden" aria-hidden="true" />
+          {/* A bottom sheet on small screens, a centred modal on wide ones. Both sit on the
+              viewport (not under the trigger), so they always fit and never run off the page. */}
+          <div className="fixed inset-0 z-30 bg-black/60" aria-hidden="true" />
 
           <div
+            ref={dialogRef}
             role="dialog"
+            aria-modal="true"
             aria-label={labels.title ? `${labels.title}: ${labels.dialog}` : labels.dialog}
-            className={`fixed inset-x-0 bottom-0 z-40 max-h-[85svh] animate-wt-sheet overflow-y-auto rounded-t-2xl border border-wt-line bg-wt-panel sm:absolute sm:inset-x-auto sm:top-full sm:bottom-auto sm:mt-2 sm:max-h-[calc(100svh-5rem)] sm:w-[24rem] sm:animate-wt-pop sm:rounded-xl ${
-              align === 'right' ? 'sm:right-0' : 'sm:left-0'
-            } ${panelClassName}`}
+            className={`fixed inset-x-0 bottom-0 z-40 flex max-h-[85svh] animate-wt-sheet flex-col rounded-t-2xl border border-wt-line bg-wt-panel sm:inset-0 sm:m-auto sm:h-fit sm:max-h-[min(46rem,calc(100svh-2rem))] sm:w-[min(52rem,calc(100vw-2rem))] sm:animate-wt-pop sm:rounded-xl ${panelClassName}`}
           >
             {show.header && (
-              <div className="flex items-start gap-3 p-4 pb-2">
+              <div className="flex shrink-0 items-start gap-3 p-4 pb-2">
                 {headerIcon !== false && headerIcon !== null && (
                   <div className="grid h-8 w-8 shrink-0 place-items-center">
                     <Icon icon={headerIcon} size={22} />
@@ -390,7 +395,7 @@ export function WalrusTune({
               </div>
             )}
 
-            <div className="flex flex-col gap-5 p-4">
+            <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto overscroll-contain p-4">
               {show.presets && visiblePresets.length > 0 && (
                 <div>
                   {labels.presets && (
@@ -418,7 +423,7 @@ export function WalrusTune({
                 </div>
               )}
 
-              <div className="flex flex-col gap-4">
+              <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
                 {sections.map((section, index) => {
                   const knobRows = section.knobs.map((k) => {
                     const value = knobs[k.id] ?? k.default
@@ -524,7 +529,7 @@ export function WalrusTune({
                   // Knobs without a group are listed plainly, with no heading.
                   if (section.name === '') {
                     return (
-                      <div key="ungrouped" className="flex flex-col gap-5">
+                      <div key="ungrouped" className="grid gap-5 sm:col-span-2 sm:grid-cols-2">
                         {knobRows}
                       </div>
                     )
@@ -573,7 +578,7 @@ export function WalrusTune({
             </div>
 
             {showFooter && (
-              <div className="flex flex-col gap-2 p-4 pt-2">
+              <div className="flex shrink-0 flex-col gap-2 border-t border-wt-line p-4 pt-3">
                 {(show.status || show.saveState) && (
                   <div className="flex items-center gap-2 text-xs text-wt-muted" aria-live="polite">
                     {show.status ? (
@@ -615,8 +620,9 @@ export function WalrusTune({
               </div>
             )}
           </div>
-        </>
-      )}
+        </>,
+        document.body,
+        )}
     </div>
   )
 }
